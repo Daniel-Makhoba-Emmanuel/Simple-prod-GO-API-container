@@ -1,0 +1,26 @@
+# ---Build stage ---
+# Use the official Golang image to build the Go application
+FROM golang:latest AS builder
+# Set the working directory inside the container
+WORKDIR /app
+
+#copy the go mod and sum files
+COPY go.mod ./
+
+# Download the Go module dependencies explicitely
+# This is done to take advantage of Docker's caching mechanism
+# If the go.mod file doesn't change, the dependencies won't be re-downloaded
+RUN go mod download
+
+# copy the source code into the container
+COPY . .
+
+# Build the Go application
+# cgo_enabled=0 disables CGO, which is useful for cross-compilation and staically linked libraries
+# GOOS=linux sets the target OS to Linux
+# -o main specifies the output binary name as 'main' the current dirctory (/app)
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o main .
+
+#specify to run when the container starts
+#use the exec form (perferred) of CMD
+CMD ["./main"]
